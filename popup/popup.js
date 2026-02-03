@@ -20,7 +20,8 @@ class MarkdownFormatterApp {
     this.settings = {};
     this.diagramSettings = {
       convertAsciiToSvg: true,
-      renderMermaid: true
+      renderMermaid: true,
+      autoDetectDiagrams: true  // Auto-detect diagrams even outside code blocks
     };
     
     // DOM Elements
@@ -34,37 +35,52 @@ class MarkdownFormatterApp {
     // Load settings
     await this.storage.init();
     this.settings = this.storage.getAll();
-    
+
+    // Load diagram settings from storage
+    this.loadDiagramSettings();
+
     // Load clipboard history
     await this.clipboard.loadHistory();
-    
+
     // Cache DOM elements
     this.cacheElements();
-    
+
     // Apply theme
     this.applyTheme();
-    
+
     // Bind events
     this.bindEvents();
-    
+
     // Apply settings to UI
     this.applySettingsToUI();
-    
+
     // Load saved draft
     this.loadDraft();
-    
+
     // Set initial format
     this.elements.formatSelect.value = this.settings.defaultFormat || 'google-docs';
-    
+
     // Initial preview state
     if (!this.settings.showPreview) {
       this.elements.previewSection.classList.add('collapsed');
     }
-    
+
     // Focus input
     this.elements.markdownInput.focus();
-    
+
     console.log('Markdown Formatter initialized');
+  }
+
+  /**
+   * Load diagram settings from storage
+   */
+  loadDiagramSettings() {
+    const allSettings = this.storage.getAll();
+    this.diagramSettings = {
+      convertAsciiToSvg: allSettings.diagram_convertAsciiToSvg !== false,
+      renderMermaid: allSettings.diagram_renderMermaid !== false,
+      autoDetectDiagrams: allSettings.diagram_autoDetectDiagrams !== false
+    };
   }
 
   cacheElements() {
@@ -109,6 +125,9 @@ class MarkdownFormatterApp {
       linkifySetting: document.getElementById('linkifySetting'),
       typographerSetting: document.getElementById('typographerSetting'),
       defaultFormatSetting: document.getElementById('defaultFormatSetting'),
+      convertAsciiToSvgSetting: document.getElementById('convertAsciiToSvgSetting'),
+      autoDetectDiagramsSetting: document.getElementById('autoDetectDiagramsSetting'),
+      renderMermaidSetting: document.getElementById('renderMermaidSetting'),
       exportSettingsBtn: document.getElementById('exportSettingsBtn'),
       importSettingsBtn: document.getElementById('importSettingsBtn'),
       importSettingsFile: document.getElementById('importSettingsFile'),
@@ -223,7 +242,12 @@ class MarkdownFormatterApp {
     this.elements.linkifySetting.addEventListener('change', (e) => this.updateSetting('linkify', e.target.checked));
     this.elements.typographerSetting.addEventListener('change', (e) => this.updateSetting('typographer', e.target.checked));
     this.elements.defaultFormatSetting.addEventListener('change', (e) => this.updateSetting('defaultFormat', e.target.value));
-    
+
+    // Diagram settings
+    this.elements.convertAsciiToSvgSetting?.addEventListener('change', (e) => this.updateDiagramSetting('convertAsciiToSvg', e.target.checked));
+    this.elements.autoDetectDiagramsSetting?.addEventListener('change', (e) => this.updateDiagramSetting('autoDetectDiagrams', e.target.checked));
+    this.elements.renderMermaidSetting?.addEventListener('change', (e) => this.updateDiagramSetting('renderMermaid', e.target.checked));
+
     // Settings import/export
     this.elements.exportSettingsBtn.addEventListener('click', () => this.exportSettings());
     this.elements.importSettingsBtn.addEventListener('click', () => this.elements.importSettingsFile.click());
@@ -321,26 +345,20 @@ class MarkdownFormatterApp {
   }
 
   /**
-   * Process code blocks to detect and convert ASCII diagrams
+   * Process entire document for ASCII diagrams
+   * Handles:
+   * - Fenced code blocks (```ascii, ```diagram, etc.)
+   * - Indented code blocks (4 spaces)
+   * - Auto-detected ASCII diagrams in regular text
    */
   processCodeBlocksForDiagrams(html, markdown) {
-    // Find code blocks that contain ASCII diagrams
-    const codeBlockPattern = /```(ascii|diagram|art|box)?\n([\s\S]*?)```/g;
-    let match;
-    let processedMarkdown = markdown;
-
-    while ((match = codeBlockPattern.exec(markdown)) !== null) {
-      const lang = match[1];
-      const content = match[2];
-
-      // Check if this is explicitly marked as a diagram or detected as ASCII art
-      if (lang === 'ascii' || lang === 'diagram' || lang === 'art' || lang === 'box' ||
-          this.diagramHandler.isAsciiDiagram(content)) {
-        // Convert to SVG image
-        const imgTag = this.diagramHandler.asciiToImgTag(content.trimEnd());
-        processedMarkdown = processedMarkdown.replace(match[0], imgTag);
-      }
-    }
+    // Use the full document processor to detect diagrams everywhere
+    const processedMarkdown = this.diagramHandler.processFullDocument(markdown, {
+      convertAsciiToSvg: this.diagramSettings.convertAsciiToSvg,
+      renderMermaid: this.diagramSettings.renderMermaid,
+      autoDetectDiagrams: this.diagramSettings.autoDetectDiagrams ?? true,
+      minDiagramLines: 3
+    });
 
     // Re-parse if we made changes
     if (processedMarkdown !== markdown) {
@@ -661,6 +679,32 @@ class MarkdownFormatterApp {
     this.elements.linkifySetting.checked = this.settings.linkify !== false;
     this.elements.typographerSetting.checked = this.settings.typographer !== false;
     this.elements.defaultFormatSetting.value = this.settings.defaultFormat || 'google-docs';
+
+    // Diagram settings
+    if (this.elements.convertAsciiToSvgSetting) {
+      this.elements.convertAsciiToSvgSetting.checked = this.diagramSettings.convertAsciiToSvg !== false;
+    }
+    if (this.elements.autoDetectDiagramsSetting) {
+      this.elements.autoDetectDiagramsSetting.checked = this.diagramSettings.autoDetectDiagrams !== false;
+    }
+    if (this.elements.renderMermaidSetting) {
+      this.elements.renderMermaidSetting.checked = this.diagramSettings.renderMermaid !== false;
+    }
+  }
+
+  /**
+   * Update diagram-specific setting
+   */
+  updateDiagramSetting(key, value) {
+    this.diagramSettings[key] = value;
+
+    // Save to storage
+    this.storage.set(`diagram_${key}`, value);
+
+    // Re-render preview if needed
+    if (this.elements.markdownInput.value.trim()) {
+      this.updatePreview();
+    }
   }
 
   async updateSetting(key, value) {
