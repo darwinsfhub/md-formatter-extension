@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Formatter - Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <header class="options-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 4h16v16H4z"/>
+          <path d="M7 15V9l2.5 3L12 9v6"/>
+          <path d="M17 9v6l-2-2"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Markdown Formatter</h1>
+        <p class="subtitle">Extension Options</p>
+      </div>
+    </header>
+
+    <main class="options-main">
+      <!-- Appearance Section -->
+      <section class="options-section">
+        <h2>Appearance</h2>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="theme">Theme</label>
+            <p class="option-description">Choose light, dark, or follow system preference</p>
+          </div>
+          <select id="theme" class="option-select">
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Behavior Section -->
+      <section class="options-section">
+        <h2>Behavior</h2>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="autoClear">Auto-clear after copy</label>
+            <p class="option-description">Clear the input field after copying</p>
+          </div>
+          <input type="checkbox" id="autoClear" class="option-toggle">
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="showPreview">Show preview by default</label>
+            <p class="option-description">Display the preview panel when opening the extension</p>
+          </div>
+          <input type="checkbox" id="showPreview" class="option-toggle">
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="livePreview">Live preview</label>
+            <p class="option-description">Update preview as you type</p>
+          </div>
+          <input type="checkbox" id="livePreview" class="option-toggle">
+        </div>
+      </section>
+
+      <!-- Output Section -->
+      <section class="options-section">
+        <h2>Output</h2>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="defaultFormat">Default format</label>
+            <p class="option-description">Default output format for conversions</p>
+          </div>
+          <select id="defaultFormat" class="option-select">
+            <option value="google-docs">Google Docs</option>
+            <option value="microsoft-word">Microsoft Word</option>
+            <option value="notion">Notion</option>
+            <option value="slack">Slack</option>
+            <option value="universal">Universal HTML</option>
+          </select>
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="includeStyles">Include inline styles</label>
+            <p class="option-description">Add CSS styles to HTML output for better formatting</p>
+          </div>
+          <input type="checkbox" id="includeStyles" class="option-toggle">
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="highlightCode">Syntax highlighting</label>
+            <p class="option-description">Add color highlighting to code blocks</p>
+          </div>
+          <input type="checkbox" id="highlightCode" class="option-toggle">
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="linkify">Auto-link URLs</label>
+            <p class="option-description">Automatically convert plain URLs to clickable links</p>
+          </div>
+          <input type="checkbox" id="linkify" class="option-toggle">
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label for="typographer">Smart typography</label>
+            <p class="option-description">Convert quotes, dashes, and ellipses to typographic equivalents</p>
+          </div>
+          <input type="checkbox" id="typographer" class="option-toggle">
+        </div>
+      </section>
+
+      <!-- Keyboard Shortcuts Section -->
+      <section class="options-section">
+        <h2>Keyboard Shortcuts</h2>
+        <div class="shortcuts-info">
+          <p>Configure keyboard shortcuts in Chrome's extension settings:</p>
+          <a href="chrome://extensions/shortcuts" id="shortcutsLink" class="shortcuts-link">
+            Open Extension Shortcuts
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+          </a>
+        </div>
+        <div class="shortcuts-list">
+          <div class="shortcut-item">
+            <span class="shortcut-action">Open extension</span>
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-action">Quick copy last conversion</span>
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-action">Copy formatted (in popup)</span>
+            <kbd>Ctrl</kbd> + <kbd>Enter</kbd>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-action">Copy plain text (in popup)</span>
+            <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd>
+          </div>
+        </div>
+      </section>
+
+      <!-- Data Section -->
+      <section class="options-section">
+        <h2>Data</h2>
+        <div class="option-row">
+          <div class="option-info">
+            <label>Export settings</label>
+            <p class="option-description">Save your settings to a file</p>
+          </div>
+          <button id="exportBtn" class="option-btn">Export</button>
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label>Import settings</label>
+            <p class="option-description">Load settings from a file</p>
+          </div>
+          <button id="importBtn" class="option-btn">Import</button>
+          <input type="file" id="importFile" accept=".json" hidden>
+        </div>
+        <div class="option-row">
+          <div class="option-info">
+            <label>Reset to defaults</label>
+            <p class="option-description">Restore all settings to their default values</p>
+          </div>
+          <button id="resetBtn" class="option-btn option-btn-danger">Reset</button>
+        </div>
+      </section>
+
+      <!-- About Section -->
+      <section class="options-section">
+        <h2>About</h2>
+        <div class="about-info">
+          <p><strong>Markdown to Formatted Text</strong></p>
+          <p>Version 1.0.0</p>
+          <p class="about-description">
+            Convert markdown to beautifully formatted text for Google Docs, 
+            Microsoft Word, Notion, and more.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="options-footer">
+      <div class="save-status" id="saveStatus"></div>
+    </footer>
+  </div>
+
+  <script src="../lib/storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
