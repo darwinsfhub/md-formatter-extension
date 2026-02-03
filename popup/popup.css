@@ -911,3 +911,93 @@ textarea:focus:not(:focus-visible),
 input:focus:not(:focus-visible) {
   outline: none;
 }
+
+/* ============================================
+   Export Dropdown
+   ============================================ */
+.export-dropdown {
+  position: relative;
+  flex: 1;
+}
+
+.export-dropdown .btn {
+  width: 100%;
+}
+
+.export-dropdown .dropdown-arrow {
+  margin-left: auto;
+  transition: transform var(--transition-fast);
+}
+
+.export-dropdown .btn[aria-expanded="true"] .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.export-menu {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: var(--space-xs);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 50;
+  animation: slideUp var(--transition-fast);
+}
+
+.export-menu.active {
+  display: block;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  text-align: left;
+}
+
+.export-option:hover {
+  background: var(--bg-hover);
+}
+
+.export-option:not(:last-child) {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.export-option svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.export-option span {
+  flex: 1;
+}
+
+.export-option small {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}

@@ -10,6 +10,7 @@ class MarkdownFormatterApp {
     this.optimizer = new HTMLOptimizer();
     this.clipboard = new ClipboardManager();
     this.storage = new StorageManager();
+    this.exporter = new DocumentExporter();
     
     // State
     this.currentHtml = '';
@@ -85,7 +86,8 @@ class MarkdownFormatterApp {
       snippetBtn: document.getElementById('snippetBtn'),
       pasteConvertBtn: document.getElementById('pasteConvertBtn'),
       generateTocBtn: document.getElementById('generateTocBtn'),
-      exportHtmlBtn: document.getElementById('exportHtmlBtn'),
+      exportBtn: document.getElementById('exportBtn'),
+      exportMenu: document.getElementById('exportMenu'),
       
       // Status
       status: document.getElementById('status'),
@@ -145,10 +147,30 @@ class MarkdownFormatterApp {
     
     // Generate TOC button
     this.elements.generateTocBtn.addEventListener('click', () => this.generateTOC());
-    
-    // Export HTML button
-    this.elements.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
-    
+
+    // Export dropdown
+    this.elements.exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleExportMenu();
+    });
+
+    // Export format options
+    this.elements.exportMenu.querySelectorAll('.export-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const format = option.dataset.format;
+        this.exportDocument(format);
+        this.closeExportMenu();
+      });
+    });
+
+    // Close export menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.export-dropdown')) {
+        this.closeExportMenu();
+      }
+    });
+
     // Preview toggle
     this.elements.previewToggle.addEventListener('click', () => this.togglePreview());
     
@@ -435,100 +457,68 @@ class MarkdownFormatterApp {
   }
 
   /**
-   * Export as HTML file
+   * Toggle export menu visibility
    */
-  exportHtml() {
+  toggleExportMenu() {
+    this.elements.exportMenu.classList.toggle('active');
+  }
+
+  /**
+   * Close export menu
+   */
+  closeExportMenu() {
+    this.elements.exportMenu.classList.remove('active');
+  }
+
+  /**
+   * Export document in the specified format
+   */
+  exportDocument(format) {
     const markdown = this.elements.markdownInput.value;
-    
+
     if (!markdown.trim()) {
       this.showStatus('Nothing to export', 'error');
       return;
     }
-    
+
     // Ensure we have latest conversion
     this.updatePreview();
-    
-    // Create a full HTML document
-    const fullHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Exported Document</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
-      line-height: 1.6;
-      color: #1a1a1a;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin: 16px 0;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px 12px;
-      text-align: left;
-    }
-    th {
-      background: #f5f5f5;
-      font-weight: bold;
-    }
-    blockquote {
-      margin: 0 0 16px 0;
-      padding: 10px 20px;
-      border-left: 4px solid #e0e0e0;
-      background: #f9f9f9;
-    }
-    code {
-      font-family: "SF Mono", Consolas, monospace;
-      background: #f4f4f4;
-      padding: 2px 6px;
-      border-radius: 3px;
-    }
-    pre {
-      background: #f4f4f4;
-      padding: 16px;
-      border-radius: 6px;
-      overflow-x: auto;
-    }
-    a {
-      color: #1a73e8;
-    }
-    mark {
-      background: #fff3cd;
-      padding: 2px 4px;
-    }
-  </style>
-</head>
-<body>
-${this.currentHtml}
-</body>
-</html>`;
 
-    // Create blob and download
-    const blob = new Blob([fullHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    
-    // Generate filename from first heading or use default
-    const firstHeading = markdown.match(/^#\s+(.+)$/m);
-    const filename = firstHeading 
-      ? firstHeading[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50) + '.html'
-      : 'exported-document.html';
-    
-    // Create download link
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    
-    URL.revokeObjectURL(url);
-    
-    this.showStatus(`Exported as ${filename}`, 'success');
+    let result;
+
+    switch (format) {
+      case 'html':
+        result = this.exporter.exportHtml(this.currentHtml, markdown);
+        break;
+      case 'docx':
+        result = this.exporter.exportDocx(this.currentHtml, markdown);
+        break;
+      case 'rtf':
+        result = this.exporter.exportRtf(this.currentHtml, markdown);
+        break;
+      case 'pdf':
+        result = this.exporter.exportPdf(this.currentHtml, markdown);
+        break;
+      default:
+        result = this.exporter.exportHtml(this.currentHtml, markdown);
+    }
+
+    if (result.success) {
+      if (result.method === 'print-dialog') {
+        this.showStatus('Opening print dialog for PDF...', 'success');
+      } else {
+        this.showStatus(`Exported as ${result.filename}`, 'success');
+      }
+    } else {
+      this.showStatus(result.error || 'Export failed', 'error');
+    }
+  }
+
+  /**
+   * Export as HTML file (legacy method, kept for compatibility)
+   */
+  exportHtml() {
+    this.exportDocument('html');
   }
 
   // ==========================================
