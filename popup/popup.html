@@ -71,6 +71,15 @@
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
               </svg>
             </button>
+            <button class="mini-btn" id="diagramBtn" title="Diagram Tools">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+                <path d="M10 6.5h4M17.5 10v4M10 17.5h4M6.5 10v4"/>
+              </svg>
+            </button>
             <button class="mini-btn" id="templateBtn" title="Insert template">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
@@ -211,6 +220,79 @@
     <footer class="footer">
       <div class="status" id="status"></div>
     </footer>
+
+    <!-- Diagram Tools Modal -->
+    <div class="modal" id="diagramModal">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content modal-content-wide">
+        <div class="modal-header">
+          <h2>Diagram Tools</h2>
+          <button class="modal-close" id="diagramClose">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="diagram-info">
+            <p><strong>ASCII diagrams detected in your markdown will be converted to images</strong> for perfect preservation when pasting into Google Docs, Word, or other apps.</p>
+          </div>
+          <div class="diagram-actions-grid">
+            <button class="diagram-action" id="convertAsciiToSvgBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h5M12 12h5M12 17h5"/>
+              </svg>
+              <span>Convert ASCII to Image</span>
+              <small>Preserve spacing in diagrams</small>
+            </button>
+            <button class="diagram-action" id="convertAsciiToMermaidBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <span>ASCII to Mermaid</span>
+              <small>Convert to flowchart syntax</small>
+            </button>
+            <button class="diagram-action" id="convertMermaidToAsciiBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <path d="M10 6.5h4M17.5 10v4"/>
+              </svg>
+              <span>Mermaid to ASCII</span>
+              <small>Convert to text diagram</small>
+            </button>
+            <button class="diagram-action" id="renderMermaidBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              <span>Render Mermaid</span>
+              <small>Generate diagram image</small>
+            </button>
+            <button class="diagram-action" id="copyDiagramAsImageBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span>Copy Diagram as Image</span>
+              <small>Copy selected diagram to clipboard</small>
+            </button>
+            <button class="diagram-action" id="insertDiagramTemplateBtn">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              <span>Insert Diagram Template</span>
+              <small>Add flowchart, sequence, etc.</small>
+            </button>
+          </div>
+          <div class="diagram-templates" id="diagramTemplates" style="display:none;">
+            <h4>Select a template:</h4>
+            <div class="diagram-template-list" id="diagramTemplateList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Templates Modal -->
     <div class="modal" id="templatesModal">
@@ -391,6 +473,7 @@
   <script src="../lib/clipboard.js"></script>
   <script src="../lib/storage.js"></script>
   <script src="../lib/document-exporter.js"></script>
+  <script src="../lib/diagram-handler.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

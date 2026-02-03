@@ -11,12 +11,17 @@ class MarkdownFormatterApp {
     this.clipboard = new ClipboardManager();
     this.storage = new StorageManager();
     this.exporter = new DocumentExporter();
-    
+    this.diagramHandler = new DiagramHandler();
+
     // State
     this.currentHtml = '';
     this.currentPlainText = '';
     this.debounceTimer = null;
     this.settings = {};
+    this.diagramSettings = {
+      convertAsciiToSvg: true,
+      renderMermaid: true
+    };
     
     // DOM Elements
     this.elements = {};
@@ -123,7 +128,20 @@ class MarkdownFormatterApp {
       historyModal: document.getElementById('historyModal'),
       historyClose: document.getElementById('historyClose'),
       historyList: document.getElementById('historyList'),
-      clearHistoryBtn: document.getElementById('clearHistoryBtn')
+      clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+
+      // Diagram tools
+      diagramBtn: document.getElementById('diagramBtn'),
+      diagramModal: document.getElementById('diagramModal'),
+      diagramClose: document.getElementById('diagramClose'),
+      convertAsciiToSvgBtn: document.getElementById('convertAsciiToSvgBtn'),
+      convertAsciiToMermaidBtn: document.getElementById('convertAsciiToMermaidBtn'),
+      convertMermaidToAsciiBtn: document.getElementById('convertMermaidToAsciiBtn'),
+      renderMermaidBtn: document.getElementById('renderMermaidBtn'),
+      copyDiagramAsImageBtn: document.getElementById('copyDiagramAsImageBtn'),
+      insertDiagramTemplateBtn: document.getElementById('insertDiagramTemplateBtn'),
+      diagramTemplates: document.getElementById('diagramTemplates'),
+      diagramTemplateList: document.getElementById('diagramTemplateList')
     };
   }
 
@@ -219,7 +237,17 @@ class MarkdownFormatterApp {
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => this.handleKeyboard(e));
-    
+
+    // Diagram tools
+    this.elements.diagramBtn?.addEventListener('click', () => this.openDiagramTools());
+    this.elements.diagramClose?.addEventListener('click', () => this.closeDiagramTools());
+    this.elements.convertAsciiToSvgBtn?.addEventListener('click', () => this.convertAsciiToSvg());
+    this.elements.convertAsciiToMermaidBtn?.addEventListener('click', () => this.convertAsciiToMermaid());
+    this.elements.convertMermaidToAsciiBtn?.addEventListener('click', () => this.convertMermaidToAscii());
+    this.elements.renderMermaidBtn?.addEventListener('click', () => this.renderMermaidDiagram());
+    this.elements.copyDiagramAsImageBtn?.addEventListener('click', () => this.copyDiagramAsImage());
+    this.elements.insertDiagramTemplateBtn?.addEventListener('click', () => this.showDiagramTemplates());
+
     // Auto-save draft
     setInterval(() => this.saveDraft(), 30000);
   }
@@ -276,15 +304,50 @@ class MarkdownFormatterApp {
     this.parser.options.highlightCode = this.settings.highlightCode;
     
     // Parse markdown
-    const html = this.parser.parse(markdown);
-    
+    let html = this.parser.parse(markdown);
+
+    // Process diagrams - convert ASCII diagrams in code blocks to images
+    if (this.diagramSettings.convertAsciiToSvg) {
+      html = this.processCodeBlocksForDiagrams(html, markdown);
+    }
+
     // Optimize for selected platform
     const format = this.elements.formatSelect.value;
     this.currentHtml = this.optimizer.optimize(html, format);
     this.currentPlainText = this.parser.toPlainText(html);
-    
+
     // Display preview (sanitized for display)
     this.elements.previewContent.innerHTML = this.optimizer.sanitize(html);
+  }
+
+  /**
+   * Process code blocks to detect and convert ASCII diagrams
+   */
+  processCodeBlocksForDiagrams(html, markdown) {
+    // Find code blocks that contain ASCII diagrams
+    const codeBlockPattern = /```(ascii|diagram|art|box)?\n([\s\S]*?)```/g;
+    let match;
+    let processedMarkdown = markdown;
+
+    while ((match = codeBlockPattern.exec(markdown)) !== null) {
+      const lang = match[1];
+      const content = match[2];
+
+      // Check if this is explicitly marked as a diagram or detected as ASCII art
+      if (lang === 'ascii' || lang === 'diagram' || lang === 'art' || lang === 'box' ||
+          this.diagramHandler.isAsciiDiagram(content)) {
+        // Convert to SVG image
+        const imgTag = this.diagramHandler.asciiToImgTag(content.trimEnd());
+        processedMarkdown = processedMarkdown.replace(match[0], imgTag);
+      }
+    }
+
+    // Re-parse if we made changes
+    if (processedMarkdown !== markdown) {
+      return this.parser.parse(processedMarkdown);
+    }
+
+    return html;
   }
 
   handleFormatChange() {
@@ -959,6 +1022,7 @@ class MarkdownFormatterApp {
     this.elements.snippetsModal.classList.remove('active');
     this.elements.historyModal?.classList.remove('active');
     this.elements.settingsPanel.classList.remove('active');
+    this.elements.diagramModal?.classList.remove('active');
   }
 
   handleKeyboard(e) {
@@ -984,6 +1048,340 @@ class MarkdownFormatterApp {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // ==========================================
+  // Diagram Tools
+  // ==========================================
+
+  openDiagramTools() {
+    this.elements.diagramModal.classList.add('active');
+  }
+
+  closeDiagramTools() {
+    this.elements.diagramModal.classList.remove('active');
+    this.elements.diagramTemplates.style.display = 'none';
+  }
+
+  /**
+   * Get selected text or code block from input
+   */
+  getSelectedOrCodeBlock() {
+    const textarea = this.elements.markdownInput;
+    const text = textarea.value;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    // If text is selected, use that
+    if (start !== end) {
+      return {
+        text: text.substring(start, end),
+        start,
+        end
+      };
+    }
+
+    // Otherwise, try to find a code block at cursor position
+    const codeBlockPattern = /```[\s\S]*?```/g;
+    let match;
+
+    while ((match = codeBlockPattern.exec(text)) !== null) {
+      if (match.index <= start && match.index + match[0].length >= start) {
+        // Extract content from code block
+        const content = match[0].replace(/```\w*\n?/, '').replace(/```$/, '');
+        return {
+          text: content.trim(),
+          start: match.index,
+          end: match.index + match[0].length,
+          isCodeBlock: true
+        };
+      }
+    }
+
+    // No selection or code block found
+    return null;
+  }
+
+  /**
+   * Convert ASCII diagram in selection to SVG image
+   */
+  async convertAsciiToSvg() {
+    const selected = this.getSelectedOrCodeBlock();
+
+    if (!selected) {
+      this.showStatus('Select an ASCII diagram or place cursor in a code block', 'warning');
+      return;
+    }
+
+    if (!this.diagramHandler.isAsciiDiagram(selected.text)) {
+      // Still convert it, even if not detected as a diagram
+      this.showStatus('Converting to image...', '');
+    }
+
+    // Generate SVG
+    const imgTag = this.diagramHandler.asciiToImgTag(selected.text, {
+      backgroundColor: '#ffffff',
+      textColor: '#000000'
+    });
+
+    // Replace in textarea
+    const textarea = this.elements.markdownInput;
+    const text = textarea.value;
+    const before = text.substring(0, selected.start);
+    const after = text.substring(selected.end);
+
+    textarea.value = before + '\n' + imgTag + '\n' + after;
+
+    // Update preview
+    this.handleInput();
+    this.closeDiagramTools();
+    this.showStatus('ASCII diagram converted to image!', 'success');
+  }
+
+  /**
+   * Convert ASCII diagram to Mermaid syntax
+   */
+  convertAsciiToMermaid() {
+    const selected = this.getSelectedOrCodeBlock();
+
+    if (!selected) {
+      this.showStatus('Select an ASCII diagram or place cursor in a code block', 'warning');
+      return;
+    }
+
+    const mermaidCode = this.diagramHandler.asciiToMermaid(selected.text);
+
+    if (!mermaidCode) {
+      this.showStatus('Could not detect flowchart structure in ASCII', 'warning');
+      return;
+    }
+
+    // Replace with Mermaid code block
+    const textarea = this.elements.markdownInput;
+    const text = textarea.value;
+    const before = text.substring(0, selected.start);
+    const after = text.substring(selected.end);
+
+    textarea.value = before + '\n```mermaid\n' + mermaidCode + '```\n' + after;
+
+    this.handleInput();
+    this.closeDiagramTools();
+    this.showStatus('Converted to Mermaid diagram!', 'success');
+  }
+
+  /**
+   * Convert Mermaid diagram to ASCII art
+   */
+  convertMermaidToAscii() {
+    const selected = this.getSelectedOrCodeBlock();
+
+    if (!selected) {
+      this.showStatus('Select a Mermaid diagram or place cursor in a code block', 'warning');
+      return;
+    }
+
+    if (!this.diagramHandler.isMermaidDiagram(selected.text)) {
+      this.showStatus('Selected text is not a Mermaid diagram', 'warning');
+      return;
+    }
+
+    const asciiArt = this.diagramHandler.mermaidToAscii(selected.text);
+
+    if (!asciiArt) {
+      this.showStatus('Could not convert Mermaid to ASCII', 'warning');
+      return;
+    }
+
+    // Replace with ASCII code block
+    const textarea = this.elements.markdownInput;
+    const text = textarea.value;
+    const before = text.substring(0, selected.start);
+    const after = text.substring(selected.end);
+
+    textarea.value = before + '\n```\n' + asciiArt + '```\n' + after;
+
+    this.handleInput();
+    this.closeDiagramTools();
+    this.showStatus('Converted to ASCII diagram!', 'success');
+  }
+
+  /**
+   * Render Mermaid diagram to SVG
+   */
+  async renderMermaidDiagram() {
+    const selected = this.getSelectedOrCodeBlock();
+
+    if (!selected) {
+      this.showStatus('Select a Mermaid diagram or place cursor in a code block', 'warning');
+      return;
+    }
+
+    if (!this.diagramHandler.isMermaidDiagram(selected.text)) {
+      this.showStatus('Selected text is not a Mermaid diagram', 'warning');
+      return;
+    }
+
+    this.showStatus('Rendering Mermaid diagram...', '');
+
+    try {
+      const svg = await this.diagramHandler.mermaidToSvg(selected.text);
+
+      // Convert SVG to data URL
+      const base64 = btoa(unescape(encodeURIComponent(svg)));
+      const imgTag = `<img src="data:image/svg+xml;base64,${base64}" alt="Mermaid Diagram" style="max-width:100%;">`;
+
+      // Replace in textarea
+      const textarea = this.elements.markdownInput;
+      const text = textarea.value;
+      const before = text.substring(0, selected.start);
+      const after = text.substring(selected.end);
+
+      textarea.value = before + '\n' + imgTag + '\n' + after;
+
+      this.handleInput();
+      this.closeDiagramTools();
+      this.showStatus('Mermaid diagram rendered!', 'success');
+    } catch (error) {
+      this.showStatus('Failed to render Mermaid: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Copy diagram as image to clipboard
+   */
+  async copyDiagramAsImage() {
+    const selected = this.getSelectedOrCodeBlock();
+
+    if (!selected) {
+      this.showStatus('Select a diagram or place cursor in a code block', 'warning');
+      return;
+    }
+
+    this.showStatus('Copying diagram as image...', '');
+
+    try {
+      const result = await this.diagramHandler.copyDiagramToClipboard(selected.text);
+
+      if (result.success) {
+        this.closeDiagramTools();
+        this.showStatus('Diagram copied as image!', 'success');
+      } else {
+        this.showStatus('Failed to copy: ' + result.error, 'error');
+      }
+    } catch (error) {
+      this.showStatus('Failed to copy diagram: ' + error.message, 'error');
+    }
+  }
+
+  /**
+   * Show diagram template options
+   */
+  showDiagramTemplates() {
+    const templates = [
+      {
+        name: 'Simple Flowchart',
+        type: 'mermaid',
+        content: `flowchart TD
+    A[Start] --> B{Decision?}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+    C --> E[End]
+    D --> E`
+      },
+      {
+        name: 'Sequence Diagram',
+        type: 'mermaid',
+        content: `sequenceDiagram
+    participant A as User
+    participant B as System
+    A->>B: Request
+    B-->>A: Response`
+      },
+      {
+        name: 'ASCII Box Diagram',
+        type: 'ascii',
+        content: `+------------+     +------------+
+|   Start    |---->|  Process   |
++------------+     +------------+
+                         |
+                         v
+                   +------------+
+                   |    End     |
+                   +------------+`
+      },
+      {
+        name: 'ASCII Tree',
+        type: 'ascii',
+        content: `Root
+├── Branch A
+│   ├── Leaf 1
+│   └── Leaf 2
+└── Branch B
+    ├── Leaf 3
+    └── Leaf 4`
+      },
+      {
+        name: 'Class Diagram',
+        type: 'mermaid',
+        content: `classDiagram
+    class Animal {
+        +String name
+        +makeSound()
+    }
+    class Dog {
+        +bark()
+    }
+    Animal <|-- Dog`
+      },
+      {
+        name: 'State Diagram',
+        type: 'mermaid',
+        content: `stateDiagram-v2
+    [*] --> Idle
+    Idle --> Processing : Start
+    Processing --> Complete : Done
+    Complete --> [*]`
+      }
+    ];
+
+    // Render templates
+    this.elements.diagramTemplateList.innerHTML = templates.map(t => `
+      <button class="diagram-template-item" data-content="${btoa(t.content)}" data-type="${t.type}">
+        <strong>${t.name}</strong>
+        <small>${t.type === 'mermaid' ? 'Mermaid' : 'ASCII'}</small>
+      </button>
+    `).join('');
+
+    // Bind click events
+    this.elements.diagramTemplateList.querySelectorAll('.diagram-template-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const content = atob(btn.dataset.content);
+        const type = btn.dataset.type;
+        this.insertDiagramTemplate(content, type);
+      });
+    });
+
+    this.elements.diagramTemplates.style.display = 'block';
+  }
+
+  /**
+   * Insert a diagram template
+   */
+  insertDiagramTemplate(content, type) {
+    const textarea = this.elements.markdownInput;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    const wrapper = type === 'mermaid' ? '```mermaid\n' + content + '\n```' : '```\n' + content + '\n```';
+
+    textarea.value = text.substring(0, start) + wrapper + text.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + wrapper.length;
+
+    this.handleInput();
+    this.closeDiagramTools();
+    this.showStatus('Diagram template inserted!', 'success');
+    textarea.focus();
   }
 }
 

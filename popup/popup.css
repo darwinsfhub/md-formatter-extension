@@ -1001,3 +1001,113 @@ input:focus:not(:focus-visible) {
   color: var(--text-tertiary);
   font-size: var(--text-xs);
 }
+
+/* ============================================
+   Diagram Tools Modal
+   ============================================ */
+.modal-content-wide {
+  max-width: 420px;
+}
+
+.diagram-info {
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.diagram-info p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.diagram-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+
+.diagram-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.diagram-action:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.diagram-action svg {
+  color: var(--accent-primary);
+}
+
+.diagram-action span {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.diagram-action small {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.diagram-templates {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.diagram-templates h4 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.diagram-template-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.diagram-template-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.diagram-template-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.diagram-template-item strong {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.diagram-template-item small {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
